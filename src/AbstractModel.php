@@ -4,6 +4,12 @@ namespace AlphaSoft\DataModel;
 
 use AlphaSoft\DataModel\Hydrator\HydratableInterface;
 
+/**
+ * @package	Data Model
+ * @author	F.Michel <fm.rejeb@alpha-soft.fr>
+ * @license	https://opensource.org/licenses/MIT	MIT License
+ * @link	https://www.alpha-soft.fr
+ */
 abstract class AbstractModel implements HydratableInterface
 {
     /**
