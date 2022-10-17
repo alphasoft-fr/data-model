@@ -47,4 +47,13 @@ class ModelTest extends TestCase {
         $this->expectException(\InvalidArgumentException::class);
         $model->get('fullName');
     }
+
+    public function testSetter()
+    {
+        $model = new MyModel();
+        $model->set('firstname', 'Alpha');
+        $model->set('lastname', 'Soft');
+        $this->assertEquals($model->get('firstname'), 'Alpha');
+        $this->assertEquals($model->get('lastname'), 'Soft');
+    }
 }

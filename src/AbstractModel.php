@@ -3,12 +3,24 @@
 namespace AlphaSoft\DataModel;
 
 use AlphaSoft\DataModel\Hydrator\HydratableInterface;
+use DateTime;
+use DateTimeInterface;
+use InvalidArgumentException;
+use LogicException;
+use function array_key_exists;
+use function get_class;
+use function is_array;
+use function is_bool;
+use function is_float;
+use function is_int;
+use function is_object;
+use function is_string;
 
 /**
- * @package	Data Model
- * @author	F.Michel <fm.rejeb@alpha-soft.fr>
- * @license	https://opensource.org/licenses/MIT	MIT License
- * @link	https://www.alpha-soft.fr
+ * @package   Data Model
+ * @author    F.Michel <fm.rejeb@alpha-soft.fr>
+ * @license   https://opensource.org/licenses/MIT	MIT License
+ * @link      https://www.alpha-soft.fr
  */
 abstract class AbstractModel implements HydratableInterface
 {
@@ -30,12 +42,23 @@ abstract class AbstractModel implements HydratableInterface
      */
     public function get(string $property)
     {
-        if (! \array_key_exists($property, $this->attributes)) {
-            throw new \InvalidArgumentException(
-                'No value for ' . $property . ' in ' . \get_class($this)
+        if (!array_key_exists($property, $this->attributes)) {
+            throw new InvalidArgumentException(
+                'No value for ' . $property . ' in ' . get_class($this)
             );
         }
         return $this->attributes[$property];
+    }
+
+    /**
+     * @param string $property
+     * @param $value mixed
+     * @return mixed
+     */
+    public function set(string $property, $value): self
+    {
+        $this->attributes[$property] = $value;
+        return $this;
     }
 
     public function getOrNull(string $property)
@@ -46,7 +69,7 @@ abstract class AbstractModel implements HydratableInterface
     public function getString(string $property): string
     {
         $value = $this->get($property);
-        if (! \is_string($value)) {
+        if (!is_string($value)) {
             throw $this->typeMismatchException($property, $value, 'string');
         }
         return $value;
@@ -55,7 +78,7 @@ abstract class AbstractModel implements HydratableInterface
     public function getInt(string $property): int
     {
         $value = $this->get($property);
-        if (! \is_int($value)) {
+        if (!is_int($value)) {
             throw $this->typeMismatchException($property, $value, 'int');
         }
         return $value;
@@ -64,7 +87,7 @@ abstract class AbstractModel implements HydratableInterface
     public function getFloat(string $property): float
     {
         $value = $this->get($property);
-        if (! \is_float($value)) {
+        if (!is_float($value)) {
             throw $this->typeMismatchException($property, $value, 'float');
         }
         return $value;
@@ -73,7 +96,7 @@ abstract class AbstractModel implements HydratableInterface
     public function getBool(string $property): bool
     {
         $value = $this->get($property);
-        if (! \is_bool($value) && $value !== 0 && $value !== 1) {
+        if (!is_bool($value) && $value !== 0 && $value !== 1) {
             throw $this->typeMismatchException($property, $value, 'boolean');
         }
 
@@ -82,12 +105,12 @@ abstract class AbstractModel implements HydratableInterface
 
     /**
      * @param string $property
-     * @return array<mixed>
+     * @return array
      */
     public function getArray(string $property): array
     {
         $value = $this->get($property);
-        if (! \is_array($value)) {
+        if (!is_array($value)) {
             throw $this->typeMismatchException($property, $value, 'array');
         }
         return $value;
@@ -96,7 +119,7 @@ abstract class AbstractModel implements HydratableInterface
     public function getInstanceOf(string $property, string $className): object
     {
         $value = $this->get($property);
-        if (! $value instanceof $className) {
+        if (!$value instanceof $className) {
             throw $this->typeMismatchException(
                 $property,
                 $value, "instance of {$className}"
@@ -108,12 +131,13 @@ abstract class AbstractModel implements HydratableInterface
     public function getDateTime(
         string $property,
         string $format = 'Y-m-d H:i:s'
-    ): ?\DateTimeInterface {
+    ): ?DateTimeInterface
+    {
         $value = $this->get($property);
-        if ($value === null || $value instanceof \DateTimeInterface) {
+        if ($value === null || $value instanceof DateTimeInterface) {
             return $value;
         }
-        return \DateTime::createFromFormat($format, $value);
+        return DateTime::createFromFormat($format, $value);
     }
 
     /**
@@ -127,21 +151,22 @@ abstract class AbstractModel implements HydratableInterface
     /**
      * @return array<string,mixed>
      */
-    public function getData(): array
+    public function toArray(): array
     {
         return $this->attributes;
     }
 
-    public function typeMismatchException(
+    protected function typeMismatchException(
         string $property,
-        $value,
+               $value,
         string $type
-    ): \LogicException {
+    ): LogicException
+    {
         $given = gettype($value);
-        if (\is_object($value)) {
-            $given = \get_class($value);
+        if (is_object($value)) {
+            $given = get_class($value);
         }
-        return new \LogicException(
+        return new LogicException(
             sprintf('%s must be %s, %s given', $property, $type, $given)
         );
     }
