@@ -14,4 +14,30 @@ final class ModelHelper
         }
         return $reflection;
     }
+
+    /**
+     * @param string $modelName
+     * @param array $data
+     * @return array<AbstractModel>
+     */
+    protected static function toCollectionObject(string $modelName, array $data): array
+    {
+        $collection = [];
+        $reflectionClass = self::getReflection($modelName);
+        foreach ($data as $item) {
+            $model = self::toObject($reflectionClass, $item);
+            $collection[] = $model;
+        }
+        return $collection;
+    }
+
+    protected static function toObject(\ReflectionClass $reflectionClass, array $data): AbstractModel
+    {
+        /**
+         * @var AbstractModel $model
+         */
+        $model = $reflectionClass->newInstance();
+        $model->hydrate($data);
+        return $model;
+    }
 }
