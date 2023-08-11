@@ -22,18 +22,52 @@ use function is_string;
  * @license   https://opensource.org/licenses/MIT	MIT License
  * @link      https://www.alpha-soft.fr
  */
-abstract class AbstractModel implements HydratableInterface
+abstract class Model implements HydratableInterface
 {
     /**
      * @var array<string,mixed>
      */
-    protected $attributes = [];
+    protected $attributes;
 
     public function __construct(array $data = [])
     {
-        if ($data !== []) {
-            $this->hydrate($data);
+        $this->attributes = static::getDefaultAttributes();
+        $this->hydrate($data);
+    }
+
+    /**
+     * @param array<string,mixed> $data
+     */
+    public function hydrate(array $data): void
+    {
+        foreach ($data as $property => $value) {
+            $this->set($property, $value);
         }
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    public function toArray(): array
+    {
+        return $this->attributes;
+    }
+
+    /**
+     * Convert attributes to a format suitable for database insertion/update.
+     *
+     * @return array<string,mixed>
+     */
+    public function toDb(): array
+    {
+        $dbData = [];
+
+        foreach ($this->attributes as $property => $value) {
+            $dbColumn = $this->mapPropertyToColumn($property);
+            $dbData[$dbColumn] = $value;
+        }
+
+        return $dbData;
     }
 
     /**
@@ -57,6 +91,7 @@ abstract class AbstractModel implements HydratableInterface
      */
     public function set(string $property, $value): self
     {
+        $property = $this->mapColumnToProperty($property);
         $this->attributes[$property] = $value;
         return $this;
     }
@@ -65,37 +100,59 @@ abstract class AbstractModel implements HydratableInterface
     {
         return $this->attributes[$property] ?? null;
     }
-
-    public function getString(string $property): string
+    public function getString(string $property, ?string $default = null): ?string
     {
         $value = $this->get($property);
+
+        if ($value === null) {
+            return $default;
+        }
+
         if (!is_string($value)) {
             throw $this->typeMismatchException($property, $value, 'string');
         }
+
         return $value;
     }
 
-    public function getInt(string $property): int
+    public function getInt(string $property, ?int $default = null): ?int
     {
         $value = $this->get($property);
+
+        if ($value === null) {
+            return $default;
+        }
+
         if (!is_int($value)) {
             throw $this->typeMismatchException($property, $value, 'int');
         }
+
         return $value;
     }
 
-    public function getFloat(string $property): float
+    public function getFloat(string $property, ?float $default = null): ?float
     {
         $value = $this->get($property);
+
+        if ($value === null) {
+            return $default;
+        }
+
         if (!is_float($value)) {
             throw $this->typeMismatchException($property, $value, 'float');
         }
+
         return $value;
     }
 
-    public function getBool(string $property): bool
+    public function getBool(string $property, ?bool $default = null): ?bool
     {
         $value = $this->get($property);
+
+        if ($value === null) {
+            return $default;
+        }
+
         if (!is_bool($value) && $value !== 0 && $value !== 1) {
             throw $this->typeMismatchException($property, $value, 'boolean');
         }
@@ -103,28 +160,36 @@ abstract class AbstractModel implements HydratableInterface
         return $value;
     }
 
-    /**
-     * @param string $property
-     * @return array
-     */
-    public function getArray(string $property): array
+    public function getArray(string $property, array $default = []): ?array
     {
         $value = $this->get($property);
+
+        if ($value === null) {
+            return $default;
+        }
+
         if (!is_array($value)) {
             throw $this->typeMismatchException($property, $value, 'array');
         }
+
         return $value;
     }
 
-    public function getInstanceOf(string $property, string $className): object
+    public function getInstanceOf(string $property, string $className): ?object
     {
         $value = $this->get($property);
+
+        if ($value === null) {
+            return null;
+        }
+
         if (!$value instanceof $className) {
             throw $this->typeMismatchException(
                 $property,
                 $value, "instance of {$className}"
             );
         }
+
         return $value;
     }
 
@@ -140,23 +205,7 @@ abstract class AbstractModel implements HydratableInterface
         return DateTime::createFromFormat($format, $value);
     }
 
-    /**
-     * @param array<string,mixed> $data
-     */
-    public function hydrate(array $data): void
-    {
-        $this->attributes = $data;
-    }
-
-    /**
-     * @return array<string,mixed>
-     */
-    public function toArray(): array
-    {
-        return $this->attributes;
-    }
-
-    protected function typeMismatchException(
+    private function typeMismatchException(
         string $property,
                $value,
         string $type
@@ -170,4 +219,43 @@ abstract class AbstractModel implements HydratableInterface
             sprintf('%s must be %s, %s given', $property, $type, $given)
         );
     }
+
+    /**
+     * Maps an object property to its corresponding database column.
+     *
+     * @param string $property The object property to be mapped.
+     * @return string The corresponding database column name.
+     */
+    protected function mapPropertyToColumn(string $property): string
+    {
+        $columnMapping = static::getDefaultColumnMapping();
+        return $columnMapping[$property] ?? $property;
+    }
+
+    /**
+     * Maps a database column to its corresponding object property.
+     *
+     * @param string $column The database column to be mapped.
+     * @return string The corresponding object property name.
+     */
+    protected function mapColumnToProperty(string $column): string
+    {
+        $columnMapping = static::getDefaultColumnMapping();
+        $reverseColumnMapping = array_flip($columnMapping);
+        return $reverseColumnMapping[$column] ?? $column;
+    }
+
+    /**
+     * Get the default attributes for the model.
+     *
+     * @return array<string,mixed> An associative array representing the default attributes.
+     */
+    abstract static protected function getDefaultAttributes(): array;
+
+    /**
+     * Get the default column mapping for the model.
+     *
+     * @return array<string,string> An associative array mapping object properties to database columns.
+     */
+    abstract static protected function getDefaultColumnMapping(): array;
 }
