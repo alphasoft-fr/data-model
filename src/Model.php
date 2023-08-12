@@ -68,7 +68,7 @@ abstract class Model implements HydratableInterface
         $dbData = [];
 
         foreach ($this->attributes as $property => $value) {
-            $dbColumn = $this->mapPropertyToColumn($property);
+            $dbColumn = self::mapPropertyToColumn($property);
             $dbData[$dbColumn] = $value;
         }
 
@@ -96,7 +96,7 @@ abstract class Model implements HydratableInterface
      */
     public function set(string $property, $value): self
     {
-        $property = $this->mapColumnToProperty($property);
+        $property = self::mapColumnToProperty($property);
         $this->attributes[$property] = $value;
         return $this;
     }
@@ -231,7 +231,7 @@ abstract class Model implements HydratableInterface
      * @param string $property The object property to be mapped.
      * @return string The corresponding database column name.
      */
-    protected function mapPropertyToColumn(string $property): string
+    final public static function mapPropertyToColumn(string $property): string
     {
         $columnMapping = static::getDefaultColumnMapping();
         return $columnMapping[$property] ?? $property;
@@ -243,7 +243,7 @@ abstract class Model implements HydratableInterface
      * @param string $column The database column to be mapped.
      * @return string The corresponding object property name.
      */
-    protected function mapColumnToProperty(string $column): string
+    final protected static function mapColumnToProperty(string $column): string
     {
         $columnMapping = static::getDefaultColumnMapping();
         $reverseColumnMapping = array_flip($columnMapping);
