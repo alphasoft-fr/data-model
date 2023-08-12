@@ -26,4 +26,9 @@ class TestModel extends Model
             'updatedAt' => 'updated_at',
         ];
     }
+
+    public static function getPrimaryKeyColumn(): string
+    {
+        return 'id';
+    }
 }

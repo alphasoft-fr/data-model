@@ -35,6 +35,11 @@ abstract class Model implements HydratableInterface
         $this->hydrate($data);
     }
 
+    public function getPrimaryKeyValue()
+    {
+        return $this->get(static::getPrimaryKeyColumn());
+    }
+
     /**
      * @param array<string,mixed> $data
      */
@@ -258,4 +263,14 @@ abstract class Model implements HydratableInterface
      * @return array<string,string> An associative array mapping object properties to database columns.
      */
     abstract static protected function getDefaultColumnMapping(): array;
+
+    /**
+     * Get the name of the primary key column for the model.
+     *
+     * This method should be implemented by subclasses to return the name of the
+     * column that serves as the primary key for the model's corresponding database table.
+     *
+     * @return string The name of the primary key column.
+     */
+    abstract public static function getPrimaryKeyColumn(): string;
 }

@@ -40,6 +40,11 @@ class UserModel extends Model
             'age' => 'user_age',
         ];
     }
+    
+    public static function getPrimaryKeyColumn(): string
+    {
+        return 'id'; // Replace 'id' with the actual primary key column name
+    }
 }
 ```
 
@@ -85,6 +90,8 @@ $userArray = $user->toArray();
 
 Suppose we have a `UserModel` class based on the `Model` class, and we want to manage user data in a database.
 
+### Example: Inserting Data
+
 ```php
 use YourNamespace\UserModel;
 use PDO;
@@ -92,9 +99,41 @@ use PDO;
 // Connect to the database
 $pdo = new PDO("mysql:host=localhost;dbname=yourdb", "username", "password");
 
-// Fetch data from the database
-$statement = $pdo->query("SELECT * FROM users WHERE id = 1");
-$data = $statement->fetch(PDO::FETCH_ASSOC);
+// Create a new UserModel instance
+$user = new UserModel();
+$user->set('fullName', 'Jane Smith');
+$user->set('age', 25);
+
+// Insert the new user data into the database
+$columns = implode(', ', array_keys($user->toDb()));
+$values = ':' . implode(', :', array_keys($user->toDb()));
+$sql = "INSERT INTO users ($columns) VALUES ($values)";
+$stmt = $pdo->prepare($sql);
+foreach ($user->toDb() as $column => $value) {
+    $stmt->bindValue(":$column", $value);
+}
+$stmt->execute();
+
+$insertedPrimaryKeyValue = $pdo->lastInsertId();
+echo "User inserted with primary key: $insertedPrimaryKeyValue\n";
+```
+
+### Example: Updating Data
+
+```php
+use YourNamespace\UserModel;
+use PDO;
+
+// Connect to the database
+$pdo = new PDO("mysql:host=localhost;dbname=yourdb", "username", "password");
+
+// Retrieve user data from the database
+$primaryKeyValue = 1; // Replace with the primary key value of the user you want to update
+$sql = "SELECT * FROM users WHERE " . UserModel::getPrimaryKeyColumn() . " = :primaryKeyValue";
+$stmt = $pdo->prepare($sql);
+$stmt->bindValue(':primaryKeyValue', $primaryKeyValue);
+$stmt->execute();
+$data = $stmt->fetch(PDO::FETCH_ASSOC);
 
 // Create an instance of UserModel
 $user = new UserModel($data);
@@ -103,17 +142,24 @@ $user = new UserModel($data);
 $user->set('fullName', 'Jane Smith');
 $user->set('age', 25);
 
-// Save changes to the database
-$dbData = $user->toDb();
+// Update the changes in the database
+$updates = [];
+foreach ($user->toDb() as $column => $value) {
+    $updates[] = "$column = :$column";
+}
+$sql = "UPDATE users SET " . implode(', ', $updates) . " WHERE " . UserModel::getPrimaryKeyColumn() . " = :" .UserModel::getPrimaryKeyColumn();
+$stmt = $pdo->prepare($sql);
+foreach ($user->toDb() as $column => $value) {
+    $stmt->bindValue(":$column", $value);
+}
+$stmt->execute();
 
-// Prepare insertion query
-$columns = implode(', ', array_keys($dbData));
-$values = ':' . implode(', :', array_keys($dbData));
-$statement = $pdo->prepare("INSERT INTO users ($columns) VALUES ($values)");
-
-// Execute the query with object data
-$statement->execute($dbData);
+echo "User updated with primary key: $primaryKeyValue\n";
 ```
+
+I hope these examples meet your requirements. If you have any further questions or need more assistance, feel free to ask!
+
+
 ## Available Methods
 
 The `Model` class provides the following methods to manipulate object data:
@@ -129,7 +175,111 @@ The `Model` class provides the following methods to manipulate object data:
 To configure the attributes and columns of your model, you need to implement the following abstract methods in your model class:
 
 - `getDefaultAttributes()`: Defines the default attributes of the object.
+
+This method should be implemented to return an associative array representing the default attributes of the object, including their default values.
+
+For example:
+
+```php
+protected static function getDefaultAttributes(): array
+{
+    return [
+        'id' => null,
+        'fullName' => null,
+        'age' => 0,
+        'isActive' => true,
+    ];
+}
+```
+
 - `getDefaultColumnMapping()`: Defines the mapping between object properties and database columns.
+
+This method should be implemented to return an associative array that maps object properties to their corresponding database columns.
+
+For example:
+
+```php
+protected static function getDefaultColumnMapping(): array
+{
+    return [
+        'fullName' => 'full_name',
+        'age' => 'user_age',
+        'isActive' => 'is_active',
+    ];
+}
+```
+
+- `getPrimaryKeyColumn()`: Get the name of the primary key column for the model.
+
+For example:
+
+```php
+public static function getPrimaryKeyColumn(): string
+{
+    return 'id'; // Replace 'id' with the actual primary key column name
+}
+```
+
+This method should be implemented by subclasses to return the name of the column that serves as the primary key for the model's corresponding database table.
+
+## Method `getPrimaryKeyValue()`
+
+The `getPrimaryKeyValue()` method is a utility function that allows you to retrieve the value of the primary key column for the model object. This method is particularly useful when you need to fetch the primary key value of the model object for operations such as updates or deletions in the database.
+
+This method directly utilizes the `get()` method to retrieve the value of the primary key column, based on the configured primary key column name.
+
+Here's an example illustrating the usage of the `getPrimaryKeyValue()` method within the context of a model class:
+
+```php
+use AlphaSoft\DataModel\Model;
+
+class UserModel extends Model
+{
+    protected static function getDefaultAttributes(): array
+    {
+        return [
+            'id' => null,
+            'fullName' => null,
+            'age' => null,
+            'isActive' => true,
+        ];
+    }
+
+    protected static function getDefaultColumnMapping(): array
+    {
+        return [
+            'id' => 'user_id',
+            'fullName' => 'full_name',
+            'age' => 'user_age',
+            'isActive' => 'is_active',
+        ];
+    }
+    
+    public static function getPrimaryKeyColumn(): string
+    {
+        return 'id'; // Replace 'id' with the actual primary key column name
+    }
+}
+
+// ...
+
+// Creating a UserModel instance
+$userData = [
+    'id' => 1,
+    'fullName' => 'John Doe',
+    'age' => 30,
+    'isActive' => true,
+];
+$user = new UserModel($userData);
+
+// Getting the primary key value
+$primaryKeyValue = $user->getPrimaryKeyValue();
+echo "Primary Key Value: $primaryKeyValue\n"; // Output: Primary Key Value: 1
+```
+
+In this example, `getPrimaryKeyValue()` method directly retrieves the value of the primary key column (in this case, the user's ID) from the model object using the `get()` method. This is a convenient way to obtain the primary key for subsequent operations, such as updating or deleting data in the database.
+
+As always, ensure that you adjust the values and column names to match your specific model and database configuration.
 
 ## ModelFactory
 
