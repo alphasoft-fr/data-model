@@ -170,6 +170,54 @@ The `Model` class provides the following methods to manipulate object data:
 - `set(string $property, $value)`: Sets the value of an object property.
 - `toDb()`: Converts the object to an associative array ready for database insertion.
 
+#### Type-Specific Retrieval
+
+You can also retrieve attribute values with specific data types using dedicated methods. These methods provide type-checking and do not allow for default values when the property is not defined or if the value is of the wrong type.
+
+- `getString` retrieves a string value.
+
+```php
+$lastname = $user->getString('lastname', 'Doe'); // Retrieves 'Doe' if 'lastname' exists and is a string
+```
+
+- `getInt` retrieves an integer value.
+
+```php
+$age = $user->getInt('age', 25); // Retrieves 25 if 'age' exists and is an integer
+```
+
+- `getFloat` retrieves a floating-point value.
+
+```php
+$price = $product->getFloat('price', 0.0); // Retrieves 0.0 if 'price' exists and is a float
+```
+
+- `getBool` retrieves a boolean value.
+
+```php
+$isActive = $user->getBool('isActive', false); // Retrieves false if 'isActive' exists and is a boolean
+```
+
+- `getArray` retrieves an array.
+
+```php
+$tags = $post->getArray('tags', []); // Retrieves an empty array if 'tags' exists and is an array
+```
+
+- `getInstanceOf` retrieves an instance of a specified class, or null if it exists and is an instance of the specified class.
+
+```php
+$profile = $user->getInstanceOf('profile', Profile::class); // Retrieves an instance of Profile or null if 'profile' exists and is an instance of Profile
+```
+
+- `getDateTime` retrieves a `DateTimeInterface` instance, optionally specifying a format for parsing.
+
+```php
+$createdAt = $post->getDateTime('created_at', 'Y-m-d H:i:s'); // Retrieves a DateTimeInterface instance or null if 'created_at' exists and is convertible to a valid date
+```
+
+Please note that these methods will throw exceptions if the property is not defined or if the value is of the wrong type. If you want to allow default values, you can use the previous examples with default values, but they will not throw exceptions in those cases.
+
 ## Configuring Attributes and Columns
 
 To configure the attributes and columns of your model, you need to implement the following abstract methods in your model class:

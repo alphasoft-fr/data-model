@@ -272,5 +272,5 @@ abstract class Model implements HydratableInterface
      *
      * @return string The name of the primary key column.
      */
-    abstract public static function getPrimaryKeyColumn(): string;
+    abstract static public function getPrimaryKeyColumn(): string;
 }
